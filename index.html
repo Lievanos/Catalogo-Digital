@@ -187,9 +187,39 @@
   .checkbox-row input{width:auto;}
   .backup-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
   @media(max-width:560px){ .comparegrid{grid-template-columns:1fr;} }
+
+  .install-banner{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--moss-dark);color:#fff;padding:10px 18px;flex-wrap:wrap;
+    position:sticky;top:0;z-index:40;
+  }
+  .install-banner-text{display:flex;align-items:center;gap:8px;font-size:13.5px;flex:1;min-width:220px;}
+  .install-banner-text .ico{font-size:16px;}
+  .install-banner-actions{display:flex;align-items:center;gap:6px;}
+  .install-banner-actions .btn{
+    background:var(--mustard);border-color:var(--mustard);color:#20261f;
+    padding:7px 16px;font-size:13px;
+  }
+  .install-banner-actions .btn:hover{background:#b87b22;border-color:#b87b22;}
+  #installBannerClose{
+    background:none;border:none;color:#fff;font-size:20px;cursor:pointer;
+    line-height:1;padding:2px 6px;opacity:.8;
+  }
+  #installBannerClose:hover{opacity:1;}
+  @media(max-width:640px){ .install-banner{padding:9px 14px;font-size:13px;} }
 </style>
 </head>
 <body>
+<div id="installBanner" class="install-banner" style="display:none;">
+  <div class="install-banner-text">
+    <span class="ico">⬇️</span>
+    <span id="installBannerMsg">Instala esta app en tu dispositivo para abrirla más rápido, sin el navegador.</span>
+  </div>
+  <div class="install-banner-actions">
+    <button class="btn" id="installBannerBtn" style="display:none;">Instalar</button>
+    <button id="installBannerClose" aria-label="Cerrar">&times;</button>
+  </div>
+</div>
 <div class="wrap">
 
   <header class="top">
@@ -1475,23 +1505,74 @@ if('serviceWorker' in navigator){
 }
 
 let deferredInstallPrompt = null;
+
+function isStandaloneMode(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function isIosDevice(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+function updateInstallUI(){
+  const banner = document.getElementById('installBanner');
+  const bannerBtn = document.getElementById('installBannerBtn');
+  const bannerMsg = document.getElementById('installBannerMsg');
+  const panel = document.getElementById('installPanel');
+
+  // Ya instalada: no mostrar nada de esto en ningún lado.
+  if(isStandaloneMode()){
+    banner.style.display='none';
+    panel.style.display='none';
+    return;
+  }
+  // El usuario cerró el aviso en esta sesión: no insistir hasta que recargue.
+  if(sessionStorage.getItem('installBannerClosed')==='1'){
+    banner.style.display='none';
+  }else if(deferredInstallPrompt){
+    bannerMsg.textContent = 'Instala esta app en tu dispositivo para abrirla más rápido, sin el navegador.';
+    bannerBtn.style.display='inline-block';
+    banner.style.display='flex';
+  }else if(isIosDevice()){
+    bannerMsg.textContent = 'Para instalarla: toca el botón compartir de Safari y elige "Agregar a pantalla de inicio".';
+    bannerBtn.style.display='none';
+    banner.style.display='flex';
+  }else{
+    banner.style.display='none';
+  }
+  panel.style.display = deferredInstallPrompt ? 'block' : 'none';
+}
+
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
   deferredInstallPrompt = e;
-  document.getElementById('installPanel').style.display='block';
+  updateInstallUI();
 });
-document.getElementById('installBtn').addEventListener('click', async ()=>{
+
+async function triggerInstall(){
   if(!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt();
   const choice = await deferredInstallPrompt.userChoice;
   if(choice.outcome==='accepted') showToast('Instalando la app...');
   deferredInstallPrompt = null;
-  document.getElementById('installPanel').style.display='none';
+  updateInstallUI();
+}
+document.getElementById('installBannerBtn').addEventListener('click', triggerInstall);
+document.getElementById('installBtn').addEventListener('click', triggerInstall);
+
+document.getElementById('installBannerClose').addEventListener('click', ()=>{
+  document.getElementById('installBanner').style.display='none';
+  sessionStorage.setItem('installBannerClosed','1');
 });
+
 window.addEventListener('appinstalled', ()=>{
   showToast('¡App instalada!');
-  document.getElementById('installPanel').style.display='none';
+  deferredInstallPrompt = null;
+  updateInstallUI();
 });
+
+// Revisión inicial al abrir la página (cubre el caso de iPhone, que no
+// dispara "beforeinstallprompt" pero sí necesita el aviso manual).
+updateInstallUI();
 </script>
 </body>
 </html>
