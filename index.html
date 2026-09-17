@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Catálogo y Ventas de la Tienda</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e3f34">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Tienda">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
@@ -521,6 +532,14 @@
 
   <!-- AJUSTES -->
   <section id="tab-ajustes">
+    <div class="panel" id="installPanel" style="display:none;">
+      <h2>Instalar la app</h2>
+      <p class="helper" style="margin-top:0;">Instálala en tu celular o computadora para abrirla como una app, con su propio ícono y sin necesidad del navegador.</p>
+      <div class="actions-row">
+        <button class="btn" id="installBtn">Instalar app</button>
+      </div>
+    </div>
+
     <div class="panel">
       <h2>Respaldo y restauración</h2>
       <p class="helper" style="margin-top:0;">Descarga toda la información de la tienda (catálogo, ventas y entradas) en un archivo. Si cambias de dispositivo o de navegador, usa ese archivo para restaurar todo.</p>
@@ -1447,6 +1466,32 @@ document.getElementById('restoreConfirmBtn').addEventListener('click', async ()=
 });
 
 loadData();
+
+// ---- PWA: service worker + instalación ----
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('installPanel').style.display='block';
+});
+document.getElementById('installBtn').addEventListener('click', async ()=>{
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const choice = await deferredInstallPrompt.userChoice;
+  if(choice.outcome==='accepted') showToast('Instalando la app...');
+  deferredInstallPrompt = null;
+  document.getElementById('installPanel').style.display='none';
+});
+window.addEventListener('appinstalled', ()=>{
+  showToast('¡App instalada!');
+  document.getElementById('installPanel').style.display='none';
+});
 </script>
 </body>
 </html>

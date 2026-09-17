@@ -1,0 +1,32 @@
+{
+  "name": "Mi Tienda - Catálogo y Ventas",
+  "short_name": "Mi Tienda",
+  "description": "Catálogo, inventario y control de ventas del día para mi tienda",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf7f0",
+  "theme_color": "#1e3f34",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
